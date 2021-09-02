@@ -1,5 +1,74 @@
 *~
-*.o
+build
+
+### CMake template
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+build.ninja
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+# CMake
+cmake-build-*/
+
+### C++ template
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
 *.lo
-*.a
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
 *.la
+*.a
+*.lib
+
+.vscode/*
+# !.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+checks.json
+
+# Local History for Visual Studio Code
+.history/
+
+### JetBrains
+# User-specific stuff
+.idea
+
+#cppcheck
+cppcheck/bob-cppcheck-build-dir/*
+
+#C/C++ GNU Global
+GPATH
+GRTAGS
+GTAGS
+
+# developer keepsake stuff for project
+.dev_stash
