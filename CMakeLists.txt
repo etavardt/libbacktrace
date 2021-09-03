@@ -78,23 +78,45 @@ endif ()
 #XCOFF executables with DWARF debugging information.
 #In other words, it supports GNU/Linux, *BSD, macOS,
 
-if (CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
+# include(CMakePrintHelpers)
+# #Example usage: cmake_print_variables(SOURCE_FILES)
+
+# cmake_print_variables(CMAKE_SYSTEM)
+# cmake_print_variables(CMAKE_SYSTEM_NAME)
+# cmake_print_variables(CMAKE_HOST_SYSTEM)
+# cmake_print_variables(CMAKE_HOST_SYSTEM_NAME)
+# cmake_print_variables(CMAKE_EXECUTABLE_MAGIC)
+# cmake_print_variables(CMAKE_EXECUTABLE_FORMAT)
+# cmake_print_variables(CMAKE_C_PLATFORM_ID)
+# cmake_print_variables(CMAKE_CXX_PLATFORM_ID)
+
+# set(FORMAT_FILES
+#     src/elf.c
+#     src/macho.c
+#     src/pecoff.c
+#     src/unknown.c
+#     src/xcoff.c
+#     src/dwarf.c
+# )
+
+
+if (CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF" OR UNIX OR CMAKE_SYSTEM_NAME MATCHES "Linux|.*BSD.*")
     set (FORMAT_FILE src/elf.c src/dwarf.c)
     math (EXPR BACKTRACE_ELF_SIZE 8*${CMAKE_C_SIZEOF_DATA_PTR})
-elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "PE/COFF")
+elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "COFF" OR CMAKE_EXECUTABLE_FORMAT STREQUAL "PE/COFF" OR WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set (FORMAT_FILE src/pecoff.c src/dwarf.c)
-    #math (EXPR BACKTRACE_PECOFF_SIZE 8*${CMAKE_C_SIZEOF_DATA_PTR})
-elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "Mach-O")
+elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "Mach-O" OR MACHO_COMPATIBILITY_VERSION OR IOS OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set (FORMAT_FILE src/macho.c src/dwarf.c)
-    #math (EXPR BACKTRACE_MACHO_SIZE 8*${CMAKE_C_SIZEOF_DATA_PTR})
-elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "XCOFF")
+elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "XCOFF" OR CMAKE_SYSTEM_NAME STREQUAL "AIX")
     set (FORMAT_FILE src/xcoff.c src/dwarf.c)
     math (EXPR BACKTRACE_XCOFF_SIZE 8*${CMAKE_C_SIZEOF_DATA_PTR})
 else ()
     set (FORMAT_FILE src/unknown.c)
     set (BACKTRACE_SUPPORTED 0)
-    message (STATUS "Executable format is not ELF. Disabling Backtrace support.")
+    message (STATUS "Executable format is Unknown. Disabling Backtrace support.")
 endif ()
+
+# cmake_print_variables(FORMAT_FILE)
 
 check_symbol_exists (mmap sys/mman.h HAVE_MMAP)
 
@@ -129,18 +151,17 @@ check_function_exists (strnlen HAVE_DECL_STRNLEN)
 
 check_function_exists (getexecname HAVE_GETEXECNAME)
 
-include (CheckIncludeFile)
-check_include_file (dwarf.h HAVE_DWARF_H)
-check_include_file (libdwarf/dwarf.h HAVE_LIBDWARF_DWARF_H)
-if (NOT HAVE_DWARF_H AND NOT HAVE_LIBDWARF_DWARF_H)
-    set (FORMAT_FILE unknown.c)
-    set (BACKTRACE_SUPPORTED 0)
-    message (STATUS "libdwarf not found. Disabling Backtrace support.")
-endif ()
+# include (CheckIncludeFile)
+# check_include_file (dwarf.h HAVE_DWARF_H)
+# check_include_file (libdwarf/dwarf.h HAVE_LIBDWARF_DWARF_H)
+# if (NOT HAVE_DWARF_H AND NOT HAVE_LIBDWARF_DWARF_H)
+#     set (FORMAT_FILE src/unknown.c)
+#     set (BACKTRACE_SUPPORTED 0)
+#     message (STATUS "libdwarf not found. Disabling Backtrace support.")
+# endif ()
 
 configure_file (src/backtrace-supported.h.in backtrace-supported.h)
-
-configure_file (src/config.h.in config.h)
+configure_file (src/config.h.in.cmake config.h)
 
 include_directories (BEFORE
     ${CMAKE_CURRENT_BINARY_DIR}
@@ -150,7 +171,7 @@ include_directories (
 )
 
 # Add target library
-add_library ("backtrace" SHARED
+add_library (backtrace STATIC
     ${BACKTRACE_FILE}
     ${FORMAT_FILE}
     ${VIEW_FILE}
@@ -165,10 +186,14 @@ add_library ("backtrace" SHARED
 set_target_properties (backtrace PROPERTIES
     COMPILE_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}"
 )
+target_compile_definitions(backtrace PUBLIC
+    BACKTRACE_ELF_SIZE=${BACKTRACE_ELF_SIZE}
+    BACKTRACE_XCOFF_SIZE=${BACKTRACE_XCOFF_SIZE}
+)
 
-# Install
-install (FILES "src/backtrace.h" "${CMAKE_CURRENT_BINARY_DIR}/backtrace-supported.h" DESTINATION "include/libbacktrace")
-install (TARGETS "backtrace" DESTINATION "lib")
+# # Install
+# install (FILES "src/backtrace.h" "${CMAKE_CURRENT_BINARY_DIR}/backtrace-supported.h" DESTINATION "include/libbacktrace")
+# install (TARGETS "backtrace" DESTINATION "lib")
 
 # Tests
 set (ENABLE_LIBBACKTRACE_TEST false CACHE BOOL "Enable libbacktrace testing")
