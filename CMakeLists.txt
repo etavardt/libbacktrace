@@ -85,7 +85,7 @@ check_c_source_compiles (
 #XCOFF executables with DWARF debugging information.
 #In other words, it supports GNU/Linux, *BSD, macOS,
 
-# include(CMakePrintHelpers)
+include(CMakePrintHelpers)
 # #Example usage: cmake_print_variables(SOURCE_FILES)
 
 # cmake_print_variables(CMAKE_SYSTEM)
@@ -107,13 +107,13 @@ check_c_source_compiles (
 # )
 
 set (BACKTRACE_SUPPORTS_DATA 1)
-if (CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF" OR (UNIX OR CMAKE_SYSTEM_NAME MATCHES "Linux|.*BSD.*" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin"))
+if (CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF")
     set (FORMAT_FILE src/elf.c src/dwarf.c)
     math (EXPR BACKTRACE_ELF_SIZE 8*${CMAKE_C_SIZEOF_DATA_PTR})
 elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "COFF" OR CMAKE_EXECUTABLE_FORMAT STREQUAL "PE/COFF" OR WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set (FORMAT_FILE src/pecoff.c src/dwarf.c)
     set (BACKTRACE_SUPPORTS_DATA 0)
-elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "Mach-O" OR MACHO_COMPATIBILITY_VERSION OR IOS OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "MACHO")
     set (FORMAT_FILE src/macho.c src/dwarf.c)
 elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "XCOFF" OR CMAKE_SYSTEM_NAME STREQUAL "AIX")
     set (FORMAT_FILE src/xcoff.c src/dwarf.c)
@@ -199,8 +199,6 @@ endif()
 if(NOT HAVE_ATOMIC_FUNCTIONS AND HAVE_SYNC_FUNCTIONS)
     set(ATOMIC_FILE src/atomic.c)
 endif()
-
-set(STDC_HEADERS PUBLIC 1)
 
 configure_file (src/backtrace-supported.h.in gen/backtrace-supported.h)
 configure_file (src/config.h.in.cmake gen/config.h)
