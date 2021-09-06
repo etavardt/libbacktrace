@@ -200,6 +200,8 @@ if(NOT HAVE_ATOMIC_FUNCTIONS AND HAVE_SYNC_FUNCTIONS)
     set(ATOMIC_FILE src/atomic.c)
 endif()
 
+set(STDC_HEADERS PUBLIC 1)
+
 configure_file (src/backtrace-supported.h.in gen/backtrace-supported.h)
 configure_file (src/config.h.in.cmake gen/config.h)
 
