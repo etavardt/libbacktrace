@@ -233,6 +233,7 @@ add_library (backtrace STATIC
 #)
 
 target_include_directories(backtrace PRIVATE BEFORE ${CMAKE_CURRENT_BINARY_DIR}/gen)
+target_include_directories(backtrace PRIVATE BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_sources(backtrace PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}/gen/backtrace-supported.h
