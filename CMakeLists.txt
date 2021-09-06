@@ -126,14 +126,6 @@ else ()
     message (STATUS "Executable format is Unknown. Disabling Backtrace support.")
 endif ()
 
-include(CMakePrintHelpers)
-cmake_print_variables(CMAKE_EXECUTABLE_FORMAT)
-cmake_print_variables(CMAKE_SYSTEM_NAME)
-cmake_print_variables(IOS)
-cmake_print_variables(UNIX)
-cmake_print_variables(MACHO_COMPATIBILITY_VERSION)
-cmake_print_variables(FORMAT_FILE)
-
 check_symbol_exists (mmap sys/mman.h HAVE_MMAP)
 
 if (HAVE_MMAP)
@@ -204,15 +196,19 @@ if(HAVE_KERN_PROC_1)
     endif()
 endif()
 
-configure_file (src/backtrace-supported.h.in backtrace-supported.h)
-configure_file (src/config.h.in.cmake config.h)
+if(NOT HAVE_ATOMIC_FUNCTIONS AND HAVE_SYNC_FUNCTIONS)
+    set(ATOMIC_FILE src/atomic.c)
+endif()
 
-include_directories (BEFORE
-    ${CMAKE_CURRENT_BINARY_DIR}
-)
-include_directories (
-    src
-)
+configure_file (src/backtrace-supported.h.in gen/backtrace-supported.h)
+configure_file (src/config.h.in.cmake gen/config.h)
+
+#include_directories (BEFORE
+#    ${CMAKE_CURRENT_BINARY_DIR}
+#)
+#include_directories (
+#    src
+#)
 
 # Add target library
 add_library (backtrace STATIC
@@ -220,6 +216,7 @@ add_library (backtrace STATIC
     ${FORMAT_FILE}
     ${VIEW_FILE}
     ${ALLOC_FILE}
+    ${ATOMIC_FILE}
     src/fileline.c
     src/posix.c
     src/print.c
@@ -227,17 +224,20 @@ add_library (backtrace STATIC
     src/state.c
 )
 
-if(NOT HAVE_ATOMIC_FUNCTIONS AND HAVE_SYNC_FUNCTIONS)
-    target_sources(backtrace PRIVATE src/atomic.c)
-endif()
+#set_target_properties (backtrace PROPERTIES
+#    COMPILE_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}"
+#)
+#target_compile_definitions(backtrace PUBLIC
+#    BACKTRACE_ELF_SIZE=${BACKTRACE_ELF_SIZE}
+#    BACKTRACE_XCOFF_SIZE=${BACKTRACE_XCOFF_SIZE}
+#)
 
-set_target_properties (backtrace PROPERTIES
-    COMPILE_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}"
-)
-target_compile_definitions(backtrace PUBLIC
-    BACKTRACE_ELF_SIZE=${BACKTRACE_ELF_SIZE}
-    BACKTRACE_XCOFF_SIZE=${BACKTRACE_XCOFF_SIZE}
-)
+target_include_directories(backtrace PRIVATE BEFORE
+        ${CMAKE_CURRENT_BINARY_DIR}/gen)
+
+target_sources(backtrace PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}/gen/backtrace-supported.h
+        ${CMAKE_CURRENT_BINARY_DIR}/gen/config.h)
 
 # # Install
 # install (FILES "src/backtrace.h" "${CMAKE_CURRENT_BINARY_DIR}/backtrace-supported.h" DESTINATION "include/libbacktrace")
