@@ -74,6 +74,13 @@ else ()
     set (BACKTRACE_SUPPORTS_THREADS 0)
 endif ()
 
+check_c_source_compiles (
+    "int i;
+    int main() {
+    __atomic_load_n (&i, __ATOMIC_ACQUIRE);
+    __atomic_store_n (&i, 1, __ATOMIC_RELEASE);}"
+    HAVE_ATOMIC_FUNCTIONS)
+
 #As of October 2020, libbacktrace supports ELF, PE/COFF, Mach-O, and
 #XCOFF executables with DWARF debugging information.
 #In other words, it supports GNU/Linux, *BSD, macOS,
@@ -99,20 +106,23 @@ endif ()
 #     src/dwarf.c
 # )
 
-
+set (BACKTRACE_SUPPORTS_DATA 1)
 if (CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF" OR UNIX OR CMAKE_SYSTEM_NAME MATCHES "Linux|.*BSD.*")
     set (FORMAT_FILE src/elf.c src/dwarf.c)
     math (EXPR BACKTRACE_ELF_SIZE 8*${CMAKE_C_SIZEOF_DATA_PTR})
 elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "COFF" OR CMAKE_EXECUTABLE_FORMAT STREQUAL "PE/COFF" OR WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set (FORMAT_FILE src/pecoff.c src/dwarf.c)
+    set (BACKTRACE_SUPPORTS_DATA 0)
 elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "Mach-O" OR MACHO_COMPATIBILITY_VERSION OR IOS OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set (FORMAT_FILE src/macho.c src/dwarf.c)
 elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "XCOFF" OR CMAKE_SYSTEM_NAME STREQUAL "AIX")
     set (FORMAT_FILE src/xcoff.c src/dwarf.c)
+    set (BACKTRACE_SUPPORTS_DATA 0)
     math (EXPR BACKTRACE_XCOFF_SIZE 8*${CMAKE_C_SIZEOF_DATA_PTR})
 else ()
     set (FORMAT_FILE src/unknown.c)
     set (BACKTRACE_SUPPORTED 0)
+    set (BACKTRACE_SUPPORTS_DATA 0)
     message (STATUS "Executable format is Unknown. Disabling Backtrace support.")
 endif ()
 
@@ -146,12 +156,29 @@ check_symbol_exists (dl_iterate_phdr link.h HAVE_DL_ITERATE_PHDR)
 
 include (CheckFunctionExists)
 check_function_exists (fcntl HAVE_FCNTL)
-
 check_function_exists (strnlen HAVE_DECL_STRNLEN)
-
 check_function_exists (getexecname HAVE_GETEXECNAME)
+check_function_exists (clock_gettime HAVE_CLOCK_GETTIME)
+check_function_exists (getpagesize HAVE_DECL_GETPAGESIZE)
+check_function_exists (lstat HAVE_LSTAT)
+check_function_exists (readlink HAVE_READLINK)
 
-# include (CheckIncludeFile)
+include (CheckIncludeFile)
+check_include_file (dlfcn.h HAVE_DLFCN_H)
+check_include_file (inttypes.h HAVE_INTTYPES_H)
+check_include_file (link.h HAVE_LINK_H)
+check_include_file (mach-o/dyld.h HAVE_MACH_O_DYLD_H)
+check_include_file (memory.h HAVE_MEMORY_H)
+check_include_file (stdint.h HAVE_STDINT_H)
+check_include_file (stdlib.h HAVE_STDLIB_H)
+check_include_file (string.h HAVE_STRING_H)
+check_include_file (strings.h HAVE_STRINGS_H)
+check_include_file (sys/ldr.h HAVE_SYS_LDR_H)
+check_include_file (sys/mman.h HAVE_SYS_MMAN_H)
+check_include_file (sys/stat.h HAVE_SYS_STAT_H)
+check_include_file (sys/types.h HAVE_SYS_TYPES_H)
+check_include_file (unistd.h HAVE_UNISTD_H)
+
 # check_include_file (dwarf.h HAVE_DWARF_H)
 # check_include_file (libdwarf/dwarf.h HAVE_LIBDWARF_DWARF_H)
 # if (NOT HAVE_DWARF_H AND NOT HAVE_LIBDWARF_DWARF_H)
@@ -159,6 +186,17 @@ check_function_exists (getexecname HAVE_GETEXECNAME)
 #     set (BACKTRACE_SUPPORTED 0)
 #     message (STATUS "libdwarf not found. Disabling Backtrace support.")
 # endif ()
+
+check_symbol_exists(KERN_PROC sys/sysctl.h HAVE_KERN_PROC_1)
+if(HAVE_KERN_PROC_1)
+    check_symbol_exists(KERN_PROC_PATHNAME sys/sysctl.h HAVE_KERN_PROC)
+    if(HAVE_KERN_PROC)
+        check_symbol_exists(KERN_PROCARGS sys/sysctl.h HAVE_KERN_PROC_ARGS_1)
+        if(HAVE_KERN_PROC_ARGS_1)
+            check_symbol_exists(KERN_PROC_PATHNAME sys/sysctl.h HAVE_KERN_PROC_ARGS)
+        endif()
+    endif()
+endif()
 
 configure_file (src/backtrace-supported.h.in backtrace-supported.h)
 configure_file (src/config.h.in.cmake config.h)
@@ -176,13 +214,17 @@ add_library (backtrace STATIC
     ${FORMAT_FILE}
     ${VIEW_FILE}
     ${ALLOC_FILE}
-    src/atomic.c
     src/fileline.c
     src/posix.c
     src/print.c
     src/sort.c
     src/state.c
 )
+
+if(NOT HAVE_ATOMIC_FUNCTIONS AND HAVE_SYNC_FUNCTIONS)
+    target_sources(backtrace PRIVATE src/atomic.c)
+endif()
+
 set_target_properties (backtrace PROPERTIES
     COMPILE_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}"
 )
