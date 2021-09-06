@@ -212,6 +212,8 @@ configure_file (src/config.h.in.cmake gen/config.h)
 
 # Add target library
 add_library (backtrace STATIC
+    ${CMAKE_CURRENT_BINARY_DIR}/gen/backtrace-supported.h
+    ${CMAKE_CURRENT_BINARY_DIR}/gen/config.h
     ${BACKTRACE_FILE}
     ${FORMAT_FILE}
     ${VIEW_FILE}
@@ -224,6 +226,9 @@ add_library (backtrace STATIC
     src/state.c
 )
 
+target_include_directories(backtrace PRIVATE BEFORE ${CMAKE_CURRENT_BINARY_DIR}/gen)
+target_include_directories(backtrace PUBLIC src)
+
 #set_target_properties (backtrace PROPERTIES
 #    COMPILE_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}"
 #)
@@ -231,13 +236,6 @@ add_library (backtrace STATIC
 #    BACKTRACE_ELF_SIZE=${BACKTRACE_ELF_SIZE}
 #    BACKTRACE_XCOFF_SIZE=${BACKTRACE_XCOFF_SIZE}
 #)
-
-target_include_directories(backtrace PRIVATE BEFORE ${CMAKE_CURRENT_BINARY_DIR}/gen)
-target_include_directories(backtrace PRIVATE BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-target_sources(backtrace PRIVATE
-        ${CMAKE_CURRENT_BINARY_DIR}/gen/backtrace-supported.h
-        ${CMAKE_CURRENT_BINARY_DIR}/gen/config.h)
 
 # # Install
 # install (FILES "src/backtrace.h" "${CMAKE_CURRENT_BINARY_DIR}/backtrace-supported.h" DESTINATION "include/libbacktrace")
