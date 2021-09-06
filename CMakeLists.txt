@@ -33,7 +33,7 @@
 cmake_minimum_required (VERSION 3.21.1)
 cmake_policy (VERSION 3.21.1)
 
-project (libbacktrace)
+project (backtrace)
 
 set (BACKTRACE_SUPPORTED 1)
 
@@ -211,7 +211,7 @@ configure_file (src/config.h.in.cmake gen/config.h)
 #)
 
 # Add target library
-add_library (libbacktrace STATIC
+add_library (backtrace STATIC
     ${BACKTRACE_FILE}
     ${FORMAT_FILE}
     ${VIEW_FILE}
@@ -224,18 +224,17 @@ add_library (libbacktrace STATIC
     src/state.c
 )
 
-#set_target_properties (libbacktrace PROPERTIES
+#set_target_properties (backtrace PROPERTIES
 #    COMPILE_FLAGS "${CMAKE_SHARED_LIBRARY_C_FLAGS}"
 #)
-#target_compile_definitions(libbacktrace PUBLIC
+#target_compile_definitions(backtrace PUBLIC
 #    BACKTRACE_ELF_SIZE=${BACKTRACE_ELF_SIZE}
 #    BACKTRACE_XCOFF_SIZE=${BACKTRACE_XCOFF_SIZE}
 #)
 
-target_include_directories(libbacktrace PRIVATE BEFORE
-        ${CMAKE_CURRENT_BINARY_DIR}/gen)
+target_include_directories(backtrace PRIVATE BEFORE ${CMAKE_CURRENT_BINARY_DIR}/gen)
 
-target_sources(libbacktrace PRIVATE
+target_sources(backtrace PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}/gen/backtrace-supported.h
         ${CMAKE_CURRENT_BINARY_DIR}/gen/config.h)
 
@@ -250,47 +249,47 @@ if (ENABLE_LIBBACKTRACE_TEST)
 
     add_executable (btest tests/btest.c)
     set_property (SOURCE tests/btest.c PROPERTY COMPILE_FLAGS "-g")
-    target_link_libraries (btest libbacktrace)
+    target_link_libraries (btest backtrace)
     add_test (test-libbacktrace btest)
 
     add_executable (stest tests/stest.c)
     set_property (SOURCE tests/stest.c PROPERTY COMPILE_FLAGS "-g")
-    target_link_libraries (stest libbacktrace)
+    target_link_libraries (stest backtrace)
     add_test (test-libbacktrace-sort stest)
 
     add_executable (mtest tests/mtest.c)
     set_property (SOURCE tests/mtest.c PROPERTY COMPILE_FLAGS "-g")
-    target_link_libraries (mtest libbacktrace)
+    target_link_libraries (mtest backtrace)
     add_test (test-libbacktrace mtest)
 
     add_executable (ttest tests/ttest.c)
     set_property (SOURCE tests/ttest.c PROPERTY COMPILE_FLAGS "-g")
-    target_link_libraries (ttest libbacktrace)
+    target_link_libraries (ttest backtrace)
     add_test (test-libbacktrace ttest)
 
     add_executable (xztest tests/xztest.c)
     set_property (SOURCE tests/xztest.c PROPERTY COMPILE_FLAGS "-g")
-    target_link_libraries (xztest libbacktrace)
+    target_link_libraries (xztest backtrace)
     add_test (test-libbacktrace xztest)
 
     add_executable (ztest tests/ztest.c)
     set_property (SOURCE tests/ztest.c PROPERTY COMPILE_FLAGS "-g")
-    target_link_libraries (ztest libbacktrace)
+    target_link_libraries (ztest backtrace)
     add_test (test-libbacktrace ztest)
 
     add_executable (edtest tests/edtest.c)
     set_property (SOURCE tests/edtest.c PROPERTY COMPILE_FLAGS "-g")
-    target_link_libraries (edtest libbacktrace)
+    target_link_libraries (edtest backtrace)
     add_test (test-libbacktrace edtest)
 
     add_executable (edtest2 tests/edtest2.c)
     set_property (SOURCE tests/edtest2.c PROPERTY COMPILE_FLAGS "-g")
-    target_link_libraries (edtest2 libbacktrace)
+    target_link_libraries (edtest2 backtrace)
     add_test (test-libbacktrace edtest2)
 
     add_executable (allocfail tests/allocfail.c)
     set_property (SOURCE tests/allocfail.c PROPERTY COMPILE_FLAGS "-g")
-    target_link_libraries (allocfail libbacktrace)
+    target_link_libraries (allocfail backtrace)
     add_test (test-libbacktrace allocfail)
 
 endif ()
