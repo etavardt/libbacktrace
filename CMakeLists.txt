@@ -107,7 +107,7 @@ check_c_source_compiles (
 # )
 
 set (BACKTRACE_SUPPORTS_DATA 1)
-if (CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF" OR UNIX OR CMAKE_SYSTEM_NAME MATCHES "Linux|.*BSD.*")
+if (CMAKE_EXECUTABLE_FORMAT STREQUAL "ELF" OR (UNIX OR CMAKE_SYSTEM_NAME MATCHES "Linux|.*BSD.*" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin"))
     set (FORMAT_FILE src/elf.c src/dwarf.c)
     math (EXPR BACKTRACE_ELF_SIZE 8*${CMAKE_C_SIZEOF_DATA_PTR})
 elseif (CMAKE_EXECUTABLE_FORMAT STREQUAL "COFF" OR CMAKE_EXECUTABLE_FORMAT STREQUAL "PE/COFF" OR WIN32 OR CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -126,7 +126,13 @@ else ()
     message (STATUS "Executable format is Unknown. Disabling Backtrace support.")
 endif ()
 
-# cmake_print_variables(FORMAT_FILE)
+include(CMakePrintHelpers)
+cmake_print_variables(CMAKE_EXECUTABLE_FORMAT)
+cmake_print_variables(CMAKE_SYSTEM_NAME)
+cmake_print_variables(IOS)
+cmake_print_variables(UNIX)
+cmake_print_variables(MACHO_COMPATIBILITY_VERSION)
+cmake_print_variables(FORMAT_FILE)
 
 check_symbol_exists (mmap sys/mman.h HAVE_MMAP)
 
